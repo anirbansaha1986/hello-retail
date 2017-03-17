@@ -31,13 +31,21 @@ provider:
 
 resources:
   Resources:
+    # Log Group
+    RetailStreamLogGroup:
+      Type: AWS::Logs::LogGroup
+      Properties:
+        LogGroupName: /aws/lambda/${self:service}-${self:custom.stage}-retailStream
+        RetentionInDays: 7
     # Retail Stream
     RetailStream:
       Type: 'AWS::Kinesis::Stream'
       Properties:
         Name: ${self:custom.stage}RetailStream
         ShardCount: 10
-    RetailStreamWriter: # role for producers
+
+    # Role for direct producers
+    RetailStreamWriter:
       Type: AWS::IAM::Role
       Properties:
         Path: /
@@ -50,8 +58,6 @@ resources:
                 AWS: # role ARNs that are allowed to write to the Retail stream
                   - 'arn:aws:iam::${self:custom.private.accountId}:role/${self:custom.private.teamRole}'
                   - '${self:custom.private.productImageProvider}'
-                  - Fn::ImportValue: ${self:custom.userInfoApi.custom.exportUserInfoReaderWriterArn}
-                  - Fn::ImportValue: ${self:custom.productCreationApi.custom.exportProductCreationWriterArn}
               Action: sts:AssumeRole
         ManagedPolicyArns:
           - ${self:custom.private.teamPolicy}
@@ -67,7 +73,8 @@ resources:
                      - 'kinesis:PutRecords'
                    Resource:
                      Fn::GetAtt: [ RetailStream, Arn ]
-    RetailStreamReader: # role for consumers
+    # Role for direct consumers
+    RetailStreamReader:
       Type: AWS::IAM::Role
       Properties:
         Path: /
@@ -96,6 +103,80 @@ resources:
                    Resource:
                      Fn::GetAtt: [ RetailStream, Arn ]
 
+    # Role for consumers of the Retail Stream Producer API
+#    RetailStreamClient:
+#      Type: AWS::IAM::Role
+#      Properties:
+#        Path: /
+#        RoleName: ${self:custom.stage}RetailStreamClient
+#        AssumeRolePolicyDocument:
+#          Version: '2012-10-17'
+#          Statement:
+#            - Effect: Allow
+#              Action: sts:AssumeRole
+#              Principal:
+#                AWS: # role ARNs that are allowed to call the Retail Stream Producer API
+#                  - 'arn:aws:iam::${self:custom.private.accountId}:role/${self:custom.private.teamRole}'
+#                  - 'arn:aws:iam::${self:custom.private.accountId}:role/${self:custom.stage}HelloRetailWebIdentity'
+#        ManagedPolicyArns:
+#          - ${self:custom.private.teamPolicy}
+#        Policies:
+#          - PolicyName: ReadFromApi
+#            PolicyDocument:
+#              Version: '2012-10-17'
+#              Statement:
+#                - Effect: 'Allow'
+#                  Action:
+#                    - 'execute-api:Invoke'
+#                  Resource:
+#                    Fn::Join:
+#                      - ''
+#                      - - 'arn:aws:execute-api:${self:provider.region}:${self:custom.private.accountId}:'
+#                        - Ref: ApiGatewayRestApi
+#                        - '/${self:custom.stage}/*/*'
+    RetailStreamLambdaWriter: # role for the Retail Stream Lambda to write to logs and the Retail Stream
+      Type: AWS::IAM::Role
+      Properties:
+        Path: /
+        RoleName: ${self:custom.stage}RetailStreamLambdaWriter
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action: sts:AssumeRole
+              Principal:
+                AWS: # role ARNs that are allowed to write to logs and retail stream
+                  - 'arn:aws:iam::${self:custom.private.accountId}:role/${self:custom.private.teamRole}'
+            - Effect: Allow
+              Action: sts:AssumeRole
+              Principal:
+                Service: 'lambda.amazonaws.com'
+        ManagedPolicyArns:
+          - ${self:custom.private.teamPolicy}
+        Policies:
+          - PolicyName: CreateAndWriteToLogs
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: 'Allow'
+                  Action:
+                    - 'logs:CreateLogStream'
+                    - 'logs:PutLogEvents'
+                  Resource:
+                    - Fn::Join:
+                      - ':'
+                      - - Fn::GetAtt: [ RetailStreamLogGroup, Arn ]
+                        - '*'
+          - PolicyName: WriteToKinesis
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: 'Allow'
+                  Action:
+                    - 'kinesis:PutRecord'
+                  Resource:
+                    Fn::ImportValue: ${self:custom.retailStream.custom.exportRetailStreamArn}
+
   Outputs:
     RetailStreamName:
       Description: The Name of the Retail Stream
@@ -121,3 +202,15 @@ resources:
         Fn::GetAtt: [ RetailStreamReader, Arn ]
       Export:
         Name: ${self:custom.retailStream.custom.exportRetailStreamReaderArn}
+#    RetailStreamClientArn:
+#      Description: Arn for role used by clients of the Retail Stream Producer API
+#      Value:
+#        Fn::GetAtt: [ RetailStreamClient, Arn ]
+#      Export:
+#        Name: ${self:custom.retailStream.custom.exportRetailStreamClientArn}
+    RetailStreamRestAPI:
+      Description: API used to submit producer events to the Retail Stream
+      Value:
+        Ref: ApiGatewayRestApi
+      Export:
+        Name: ${self:custom.retailStream.custom.exportRetailStreamRestAPI}

@@ -65,7 +65,7 @@ class ProductDetailPage extends Component {
       })
 
     this.setState({
-      buyMessage: 'On order.',
+      buyMessage: 'Submitting order.',
     })
   }
 

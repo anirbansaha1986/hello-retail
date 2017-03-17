@@ -186,7 +186,7 @@ resources:
               Principal:
                 AWS: # role ARNs that are allowed to read from the Product Catalog
                   - 'arn:aws:iam::${self:custom.private.accountId}:role/${self:custom.private.teamRole}'
-                  - 'arn:aws:iam::${self:custom.private.accountId}:role/${self:custom.stage}HelloRetailWebIdentity'
+                  - '${self:custom.private.websiteRole}'
         ManagedPolicyArns:
           - ${self:custom.private.teamPolicy}
         Policies:
