@@ -75,7 +75,7 @@ class NewProductPage extends Component {
       isProductValid: false,
     })
 
-    this.props.awsLogin.makeApiRequest(config.ProductCreateAPI, 'POST', '/product-create/', {
+    this.props.awsLogin.makeApiRequest(config.RetailStreamAPI, 'POST', '/event-writer/', {
       schema: 'com.nordstrom/product/create/1-0-0',
       id: (`0000000${Math.floor(Math.abs(Math.random() * 10000000))}`).substr(-7),
       origin: `hello-retail/web-client-create-product/${this.props.awsLogin.state.profile.email}/${this.props.awsLogin.state.profile.name}`,

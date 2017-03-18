@@ -24,7 +24,7 @@ custom:
       - DomainName
 
   # Hosted Zone ID for all of CloudFormation.
-  cloudFrontHostedZoneId: Z2FDTNDATAQYW2
+  cloudFrontHostedZoneId: ${self:custom.private.cloudFrontHostedZoneId}
 
   # Public domain for the site e.g. hello-retail.biz
   domainName: ${self:custom.private.domainName}
@@ -101,10 +101,8 @@ custom:
         Fn::ImportValue: ${self:custom.productCatalogBuilder.custom.exportProductCategoryTableName}
       UserInfoAPI:
         Fn::ImportValue: ${self:custom.userInfoApi.custom.exportUserInfoRestAPI}
-      ProductCreateAPI:
-        Fn::ImportValue: ${self:custom.productCreationApi.custom.exportProductCreationRestAPI}
-      ProductPurchaseAPI:
-        Fn::ImportValue: ${self:custom.productPurchaseApi.custom.exportProductPurchaseRestAPI}
+      RetailStreamAPI:
+        Fn::ImportValue: ${self:custom.retailStream.custom.exportRetailStreamRestAPI}
     webpackPath: ./webpack.config.js
 
   webApp: ${self:} # externally, use `${file(~/web/serverless.yml)}`, replacing the `~` therein with the appropriate relative reference [e.g. '..' or '../..']
@@ -147,17 +145,17 @@ resources:
                   www.amazon.com:app_id: ${self:custom.oAuthAppId}
         ManagedPolicyArns:
           - ${self:custom.private.teamPolicy}
-        Policies:
-          - PolicyName: AllowAssumeProductCatalogReader
-            PolicyDocument:
-              Version: '2012-10-17'
-              Statement:
-                - Effect: Allow
-                  Action:
-                    - sts:AssumeRole
-                  Resource:
-                    - Fn::ImportValue: ${self:custom.productCatalogBuilder.custom.exportProductCatalogReaderArn}
-                    - Fn::ImportValue: ${self:custom.productCreationApi.custom.exportProductCreationWriterArn}
+        # TODO do not believe this will work as intended
+#        Policies:
+#          - PolicyName: AllowAssumeProductCatalogReader
+#            PolicyDocument:
+#              Version: '2012-10-17'
+#              Statement:
+#                - Effect: Allow
+#                  Action:
+#                    - sts:AssumeRole
+#                  Resource:
+#                    - Fn::ImportValue: ${self:custom.productCatalogBuilder.custom.exportProductCatalogReaderArn}
 
     # ===================== S3 =====================
 
