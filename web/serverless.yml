@@ -62,12 +62,6 @@ custom:
   retailStream: ${file(../retail-stream/serverless.yml)}
   productCatalogBuilderVersion: 1
   productCatalogBuilder: ${file(../product-catalog/builder/serverless.yml)}
-  productCreationApi: ${file(../product-creation/api/serverless.yml)}
-  productPurchaseApi: ${file(../product-purchase/api/serverless.yml)}
-  userInfoVersion: 1
-  userInfo: ${file(../user-info/serverless.yml)}
-  userInfoApiVersion: 1
-  userInfoApi: ${file(../user-info/api/serverless.yml)}
 
   s3Bucket:
     Fn::Join: # e.g. s3://stage.hello-retail.biz/
@@ -99,8 +93,6 @@ custom:
         Fn::ImportValue: ${self:custom.productCatalogBuilder.custom.exportProductCatalogTableName}
       ProductCategoryTableName:
         Fn::ImportValue: ${self:custom.productCatalogBuilder.custom.exportProductCategoryTableName}
-      UserInfoAPI:
-        Fn::ImportValue: ${self:custom.userInfoApi.custom.exportUserInfoRestAPI}
       RetailStreamAPI:
         Fn::ImportValue: ${self:custom.retailStream.custom.exportRetailStreamRestAPI}
     webpackPath: ./webpack.config.js

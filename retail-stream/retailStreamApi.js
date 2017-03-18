@@ -10,11 +10,20 @@ const makeSchemaId = schema => `${schema.self.vendor}/${schema.self.name}/${sche
 
 const productPurchaseSchema = require('./schemas/product-purchase-schema.json')
 const productCreateSchema = require('./schemas/product-create-schema.json')
+const userLoginSchema = require('./schemas/user-login-schema.json')
+const updatePhoneSchema = require('./schemas/user-update-phone-schema.json')
+const addRoleSchema = require('./schemas/user-add-role-schema.json')
 
 const productPurchaseSchemaId = makeSchemaId(productPurchaseSchema)
 const productCreateSchemaId = makeSchemaId(productCreateSchema)
+const userLoginSchemaId = makeSchemaId(userLoginSchema)
+const updatePhoneSchemaId = makeSchemaId(updatePhoneSchema)
+const addRoleSchemaId = makeSchemaId(addRoleSchema)
 ajv.addSchema(productPurchaseSchema, productPurchaseSchemaId)
 ajv.addSchema(productCreateSchema, productCreateSchemaId)
+ajv.addSchema(userLoginSchema, userLoginSchemaId)
+ajv.addSchema(updatePhoneSchema, updatePhoneSchemaId)
+ajv.addSchema(addRoleSchema, addRoleSchemaId)
 const schema = [
   {
     methodName: 'product-purchase',
@@ -23,6 +32,18 @@ const schema = [
   {
     methodName: 'product-create',
     schemaId: productCreateSchemaId,
+  },
+  {
+    methodName: 'user-login',
+    schemaId: userLoginSchemaId,
+  },
+  {
+    methodName: 'user-update-phone',
+    schemaId: updatePhoneSchemaId,
+  },
+  {
+    methodName: 'user-add-role',
+    schemaId: addRoleSchemaId,
   },
 ]
 
@@ -113,8 +134,15 @@ const impl = {
 
 const api = {
   /**
-   * Send the retail event to the retail stream.  Example event (a product-create):
-
+   * Send the retail event to the retail stream.  Example events:
+   *
+   * product-purchase:
+   {
+     "schema": "com.nordstrom/product/purchase/1-0-0",
+     "id": "4579874"
+   }
+   *
+   * product-create:
    {
      "schema": "com.nordstrom/product/create/1-0-0",
      "id": "4579874",
@@ -123,7 +151,21 @@ const api = {
      "description": "PAGE:/s/polo-ralph-lauren-3-pack-socks/4579874",
      "category": "Socks for Men"
    }
-
+   *
+   * user-login:
+   {
+     "schema": "com.nordstrom/user-info/create/1-0-0",
+     "id": "amzn1.account.AHMNGKVGNQYJUV7BZZZMFH3HP3KQ",
+     "name": "Greg Smith"
+   }
+   *
+   * update-phone:
+   {
+     "schema": "com.nordstrom/user-info/create/1-0-0",
+     "id": "amzn1.account.AHMNGKVGNQYJUV7BZZZMFH3HP3KQ",
+     "phone": "4255552603"
+   }
+   *
    * @param event The API Gateway lambda invocation event describing the event to be written to the retail stream.
    * @param context AWS runtime related information, e.g. log group id, timeout, request id, etc.
    * @param callback The callback to inform of completion: (error, result).
