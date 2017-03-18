@@ -14,8 +14,8 @@ custom:
   userInfoApiVersion: 1
   userInfoApi: ${self:}
   # Exports
-  exportUserInfoClientArn: ${self:custom.userInfoApi.service}:${self:custom.stage}:UserInfoClientArn
-  exportUserInfoReaderWriterArn: ${self:custom.userInfoApi.service}:${self:custom.stage}:UserInfoReaderWriterArn
+  # exportUserInfoClientArn: ${self:custom.userInfoApi.service}:${self:custom.stage}:UserInfoClientArn
+  # exportUserInfoReaderWriterArn: ${self:custom.userInfoApi.service}:${self:custom.stage}:UserInfoReaderWriterArn
   exportUserInfoRestAPI: ${self:custom.userInfoApi.service}:${self:custom.stage}:UserInfoRestAPI
 
 provider:
@@ -32,8 +32,8 @@ functions:
     handler: userInfoApi.loginUser
     environment:
       STAGE: ${self:custom.stage}
-      STREAM_WRITER_ROLE:
-        Fn::ImportValue: ${self:custom.retailStream.custom.exportRetailStreamWriterArn}
+#      STREAM_WRITER_ROLE:
+#        Fn::ImportValue: ${self:custom.retailStream.custom.exportRetailStreamWriterArn}
       STREAM_NAME:
         Fn::ImportValue: ${self:custom.retailStream.custom.exportRetailStreamName}
     events:
@@ -58,8 +58,8 @@ functions:
     handler: userInfoApi.updatePhone
     environment:
       STAGE: ${self:custom.stage}
-      STREAM_WRITER_ROLE:
-        Fn::ImportValue: ${self:custom.retailStream.custom.exportRetailStreamWriterArn}
+#      STREAM_WRITER_ROLE:
+#        Fn::ImportValue: ${self:custom.retailStream.custom.exportRetailStreamWriterArn}
       STREAM_NAME:
         Fn::ImportValue: ${self:custom.retailStream.custom.exportRetailStreamName}
     events:
@@ -77,15 +77,15 @@ functions:
               - X-Amz-Security-Token
               - X-Amz-User-Agent
             allowCredentials: false
-
+# TODO this lambda/endpoint does not appear to be used (as yet) by the website, so probably ought to remove, b ut will migrate it anyway.
   addRole:
     role:
       Fn::GetAtt: [ UserInfoReaderWriter, Arn ]
     handler: userInfoApi.addRole
     environment:
       STAGE: ${self:custom.stage}
-      STREAM_WRITER_ROLE:
-        Fn::ImportValue: ${self:custom.retailStream.custom.exportRetailStreamWriterArn}
+#      STREAM_WRITER_ROLE:
+#        Fn::ImportValue: ${self:custom.retailStream.custom.exportRetailStreamWriterArn}
       STREAM_NAME:
         Fn::ImportValue: ${self:custom.retailStream.custom.exportRetailStreamName}
     events:
@@ -124,36 +124,36 @@ resources:
         RetentionInDays: 7
 
     # User Information Roles
-    UserInfoClient: # role for consumers of the User Information API
-      Type: AWS::IAM::Role
-      Properties:
-        Path: /
-        RoleName: ${self:custom.stage}UserInfoClient
-        AssumeRolePolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-            - Effect: Allow
-              Action: sts:AssumeRole
-              Principal:
-                AWS: # role ARNs that are allowed to call the User Info API
-                  - 'arn:aws:iam::${self:custom.private.accountId}:role/${self:custom.private.teamRole}'
-                  - 'arn:aws:iam::${self:custom.private.accountId}:role/${self:custom.stage}HelloRetailWebIdentity'
-        ManagedPolicyArns:
-          - ${self:custom.private.teamPolicy}
-        Policies:
-          - PolicyName: ReadFromApi
-            PolicyDocument:
-              Version: '2012-10-17'
-              Statement:
-                - Effect: 'Allow'
-                  Action:
-                    - 'execute-api:Invoke'
-                  Resource:
-                    Fn::Join:
-                      - ''
-                      - - 'arn:aws:execute-api:${self:provider.region}:${self:custom.private.accountId}:'
-                        - Ref: ApiGatewayRestApi
-                        - '/${self:custom.stage}/*/*'
+#    UserInfoClient: # role for consumers of the User Information API
+#      Type: AWS::IAM::Role
+#      Properties:
+#        Path: /
+#        RoleName: ${self:custom.stage}UserInfoClient
+#        AssumeRolePolicyDocument:
+#          Version: '2012-10-17'
+#          Statement:
+#            - Effect: Allow
+#              Action: sts:AssumeRole
+#              Principal:
+#                AWS: # role ARNs that are allowed to call the User Info API
+#                  - 'arn:aws:iam::${self:custom.private.accountId}:role/${self:custom.private.teamRole}'
+#                  - 'arn:aws:iam::${self:custom.private.accountId}:role/${self:custom.stage}HelloRetailWebIdentity'
+#        ManagedPolicyArns:
+#          - ${self:custom.private.teamPolicy}
+#        Policies:
+#          - PolicyName: ReadFromApi
+#            PolicyDocument:
+#              Version: '2012-10-17'
+#              Statement:
+#                - Effect: 'Allow'
+#                  Action:
+#                    - 'execute-api:Invoke'
+#                  Resource:
+#                    Fn::Join:
+#                      - ''
+#                      - - 'arn:aws:execute-api:${self:provider.region}:${self:custom.private.accountId}:'
+#                        - Ref: ApiGatewayRestApi
+#                        - '/${self:custom.stage}/*/*'
 
     # TODO: When implementing builder, create new role and transfer Kinesis read and Dynamo write rights to that service's role
     UserInfoReaderWriter: # role for the User Info Lambdas
@@ -169,7 +169,7 @@ resources:
               Principal:
                 AWS: # role ARNs that are allowed to call the User Info API
                   - 'arn:aws:iam::${self:custom.private.accountId}:role/${self:custom.private.teamRole}'
-                  - 'arn:aws:iam::${self:custom.private.accountId}:role/${self:custom.stage}RetailStreamWriter'
+#                  - 'arn:aws:iam::${self:custom.private.accountId}:role/${self:custom.stage}RetailStreamWriter'
             - Effect: Allow
               Action: sts:AssumeRole
               Principal:
@@ -198,19 +198,21 @@ resources:
                       - ':'
                       - - Fn::GetAtt: [ AddRoleLogGroup, Arn ]
                         - '*'
-          - PolicyName: ReadFromKinesis
+          # TODO when are we reading from kinesis in this service?  seems like we just have a write in the lambdas.
+          - PolicyName: ReadFromAndWriteToKinesis
             PolicyDocument:
               Version: '2012-10-17'
               Statement:
                 - Effect: 'Allow'
                   Action:
-                    - 'kinesis:GetRecords'
-                    - 'kinesis:GetShardIterator'
-                    - 'kinesis:DescribeStream'
-                    - 'kinesis:ListStreams'
+#                    - 'kinesis:GetRecords'
+#                    - 'kinesis:GetShardIterator'
+#                    - 'kinesis:DescribeStream'
+#                    - 'kinesis:ListStreams'
                     - 'kinesis:PutRecord'
                   Resource:
                     Fn::ImportValue: ${self:custom.retailStream.custom.exportRetailStreamArn}
+          # TODO probably remove.  this is a role on a resource that does not appear to be used at the moment
           - PolicyName: WriteToUserInfo
             PolicyDocument:
               Version: '2012-10-17'
@@ -225,7 +227,7 @@ resources:
                       - - 'arn:aws:dynamodb:${self:provider.region}:${self:custom.private.accountId}:table'
                         - Ref: UserInfoTable
 
-
+    # TODO probably remove.  this does not appear to be a used resource at the moment
     # User Info Tables
     UserInfoTable:
       Type: 'AWS::DynamoDB::Table'
@@ -255,18 +257,19 @@ resources:
 #        AuthorizationType: AWS_IAM
 
   Outputs:
-    UserInfoClientArn:
-      Description: Arn for role used by clients of the User Info API
-      Value:
-        Fn::GetAtt: [ UserInfoClient, Arn ]
-      Export:
-        Name: ${self:custom.userInfoApi.custom.exportUserInfoClientArn}
-    UserInfoReaderWriterArn:
-      Description: A role allowing for reading from kinesis and writing to dynamo
-      Value:
-        Fn::GetAtt: [ UserInfoReaderWriter, Arn ]
-      Export:
-        Name: ${self:custom.userInfoApi.custom.exportUserInfoReaderWriterArn}
+#    UserInfoClientArn:
+#      Description: Arn for role used by clients of the User Info API
+#      Value:
+#        Fn::GetAtt: [ UserInfoClient, Arn ]
+#      Export:
+#        Name: ${self:custom.userInfoApi.custom.exportUserInfoClientArn}
+    # this export does not appear to be used by anyone outside this service
+#    UserInfoReaderWriterArn:
+#      Description: A role allowing for reading from retail stream kinesis and writing to user info dynamo
+#      Value:
+#        Fn::GetAtt: [ UserInfoReaderWriter, Arn ]
+#      Export:
+#        Name: ${self:custom.userInfoApi.custom.exportUserInfoReaderWriterArn}
     UserInfoRestAPI:
       Description: API used to submit user information
       Value:
