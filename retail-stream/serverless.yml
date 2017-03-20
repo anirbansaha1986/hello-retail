@@ -32,8 +32,8 @@ functions:
       Fn::GetAtt: [ RetailStreamLambdaWriter, Arn ]
     handler: retailStreamApi.eventWriter
     environment:
-      STREAM_NAME:
-        Fn::ImportValue: ${self:custom.retailStream.custom.exportRetailStreamName}
+      STREAM_NAME: ${self:custom.stage}RetailStream
+#        Fn::ImportValue: ${self:custom.retailStream.custom.exportRetailStreamName}
     events:
       - http:
           path: event-writer
@@ -70,7 +70,7 @@ resources:
       Type: AWS::IAM::Role
       Properties:
         Path: /
-        RoleName: ${self:custom.stage}RetailStreamWriter
+        RoleName: ${self:custom.stage}RetailStreamWriter${self:custom.retailStreamVersion}
         AssumeRolePolicyDocument:
           Version: '2012-10-17'
           Statement:
@@ -78,7 +78,6 @@ resources:
               Principal:
                 AWS: # role ARNs that are allowed to write to the Retail stream
                   - 'arn:aws:iam::${self:custom.private.accountId}:role/${self:custom.private.teamRole}'
-                  - '${self:custom.private.productImageProvider}'
               Action: sts:AssumeRole
         ManagedPolicyArns:
           - ${self:custom.private.teamPolicy}
@@ -99,7 +98,7 @@ resources:
       Type: AWS::IAM::Role
       Properties:
         Path: /
-        RoleName: ${self:custom.stage}RetailStreamReader
+        RoleName: ${self:custom.stage}RetailStreamReader${self:custom.retailStreamVersion}
         AssumeRolePolicyDocument:
           Version: '2012-10-17'
           Statement:
@@ -159,7 +158,7 @@ resources:
       Type: AWS::IAM::Role
       Properties:
         Path: /
-        RoleName: ${self:custom.stage}RetailStreamLambdaWriter
+        RoleName: ${self:custom.stage}RetailStreamLambdaWriter${self:custom.retailStreamVersion}
         AssumeRolePolicyDocument:
           Version: '2012-10-17'
           Statement:
@@ -196,7 +195,8 @@ resources:
                   Action:
                     - 'kinesis:PutRecord'
                   Resource:
-                    Fn::ImportValue: ${self:custom.retailStream.custom.exportRetailStreamArn}
+#                    Fn::ImportValue: ${self:custom.retailStream.custom.exportRetailStreamArn}
+                    Fn::GetAtt: [ RetailStream, Arn ]
 
   Outputs:
     RetailStreamName:
