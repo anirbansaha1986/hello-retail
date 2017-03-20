@@ -7,7 +7,7 @@ custom:
   private: ${file(../private.yml)}
   helloRetail: ${file(../helloRetail.yml)}
   # Retail Stream Versions & Exports
-  # WARNING: each project that uses these will have to define the following two attributes (custom.retailStreamVersion, custom.retailStream) in its serverless.yml:
+  # WARNING: each project that uses these will have to define the following two attributes in its serverless.yml: (custom.retailStreamVersion, custom.retailStream)
   retailStreamVersion: 1 # The version of this service to depend upon
   retailStream: ${self:} # externally, use `${file(~/retail-stream/serverless.yml)}`, replacing the `~` therein with the appropriate relative reference [e.g. '..' or '../..']
   # Exports
@@ -77,7 +77,7 @@ resources:
             - Effect: Allow
               Principal:
                 AWS: # role ARNs that are allowed to write to the Retail stream
-                  - 'arn:aws:iam::${self:custom.private.accountId}:role/${self:custom.private.teamRole}'
+                  - arn:aws:iam::${self:custom.private.accountId}:role/${self:custom.private.teamRole}
               Action: sts:AssumeRole
         ManagedPolicyArns:
           - ${self:custom.private.teamPolicy}
@@ -123,37 +123,6 @@ resources:
                    Resource:
                      Fn::GetAtt: [ RetailStream, Arn ]
 
-    # Role for consumers of the Retail Stream Producer API
-#    RetailStreamClient:
-#      Type: AWS::IAM::Role
-#      Properties:
-#        Path: /
-#        RoleName: ${self:custom.stage}RetailStreamClient
-#        AssumeRolePolicyDocument:
-#          Version: '2012-10-17'
-#          Statement:
-#            - Effect: Allow
-#              Action: sts:AssumeRole
-#              Principal:
-#                AWS: # role ARNs that are allowed to call the Retail Stream Producer API
-#                  - 'arn:aws:iam::${self:custom.private.accountId}:role/${self:custom.private.teamRole}'
-#                  - 'arn:aws:iam::${self:custom.private.accountId}:role/${self:custom.stage}HelloRetailWebIdentity'
-#        ManagedPolicyArns:
-#          - ${self:custom.private.teamPolicy}
-#        Policies:
-#          - PolicyName: ReadFromApi
-#            PolicyDocument:
-#              Version: '2012-10-17'
-#              Statement:
-#                - Effect: 'Allow'
-#                  Action:
-#                    - 'execute-api:Invoke'
-#                  Resource:
-#                    Fn::Join:
-#                      - ''
-#                      - - 'arn:aws:execute-api:${self:provider.region}:${self:custom.private.accountId}:'
-#                        - Ref: ApiGatewayRestApi
-#                        - '/${self:custom.stage}/*/*'
     RetailStreamLambdaWriter: # role for the Retail Stream Lambda to write to logs and the Retail Stream
       Type: AWS::IAM::Role
       Properties:
@@ -223,12 +192,6 @@ resources:
         Fn::GetAtt: [ RetailStreamReader, Arn ]
       Export:
         Name: ${self:custom.retailStream.custom.exportRetailStreamReaderArn}
-#    RetailStreamClientArn:
-#      Description: Arn for role used by clients of the Retail Stream Producer API
-#      Value:
-#        Fn::GetAtt: [ RetailStreamClient, Arn ]
-#      Export:
-#        Name: ${self:custom.retailStream.custom.exportRetailStreamClientArn}
     RetailStreamRestAPI:
       Description: API used to submit producer events to the Retail Stream
       Value:
