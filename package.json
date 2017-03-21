@@ -12,6 +12,7 @@
     "root:deploy:all":      "npm run stream:deploy && npm run catalog:deploy:all && npm run photos:deploy:all && npm run web:deploy:all",
     "root:remove:all":      "npm run web:remove:all && npm run photos:remove:all && npm run catalog:remove:all && npm run stream:remove",
 
+    "stream:install":       "./build/0.env.sh && ./build/1.install.sh \"Installing Retail Stream Dependencies\"               ./retail-stream",
     "stream:deploy":        "./build/0.env.sh && ./build/2.sls.sh deploy \"Deploying Retail Stream\"                          ./retail-stream",
     "stream:remove":        "./build/0.env.sh && ./build/2.sls.sh remove \"Removing Retail Stream\"                           ./retail-stream",
 
@@ -65,7 +66,7 @@
     "web:deploy":           "./build/0.env.sh && ./build/2.sls.sh deploy \"Deploying Web App\"                                ./web",
     "web:deploy:all":       "npm run web:build && npm run web:deploy",
     "web:remove:all":       "./build/0.env.sh && ./build/2.sls.sh remove \"Removing Web App\"                                 ./web",
-    
+
     "web:dev:hot": "./node_modules/.bin/webpack-dev-server --config ./web/webpack.config.js --https --hot --progress --colors --watch --display-error-details --display-cached --content-base ./web/app/"
   },
   "repository": {
