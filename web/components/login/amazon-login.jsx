@@ -40,6 +40,7 @@ class AmazonLogin extends Component {
 
     this.state = {
       amazonLoginReady: false,
+      autoLoginAttempted: false,
     }
   }
 
@@ -225,6 +226,10 @@ class AmazonLogin extends Component {
   }
 
   render() {
+    if (!this.state.amazonLoginReady || !this.state.autoLoginAttempted) {
+      return (<div> Waiting for Amazon Login...</div>)
+    }
+
     return (
       <div id="amazon-root">
         <button onClick={this.loginClicked} disabled={!this.state.amazonLoginReady}>Amazon Login</button>

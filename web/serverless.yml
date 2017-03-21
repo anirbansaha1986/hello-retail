@@ -137,17 +137,6 @@ resources:
                   www.amazon.com:app_id: ${self:custom.oAuthAppId}
         ManagedPolicyArns:
           - ${self:custom.private.teamPolicy}
-        # TODO do not believe this will work as intended
-#        Policies:
-#          - PolicyName: AllowAssumeProductCatalogReader
-#            PolicyDocument:
-#              Version: '2012-10-17'
-#              Statement:
-#                - Effect: Allow
-#                  Action:
-#                    - sts:AssumeRole
-#                  Resource:
-#                    - Fn::ImportValue: ${self:custom.productCatalogBuilder.custom.exportProductCatalogReaderArn}
 
     # ===================== S3 =====================
 
