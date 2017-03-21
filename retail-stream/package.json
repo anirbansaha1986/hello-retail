@@ -1,0 +1,16 @@
+{
+  "name": "hello-retail-stream-writer",
+  "version": "0.0.1",
+  "description": "Service to write events to a retail stream.",
+  "main": "retailStreamApi.js",
+  "scripts": {},
+  "author": "Nordstrom",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/Nordstrom/hello-retail/issues"
+  },
+  "homepage": "https://github.com/Nordstrom/hello-retail/retail-stream#readme",
+  "dependencies": {
+    "ajv": "^4.10.4"
+  }
+}

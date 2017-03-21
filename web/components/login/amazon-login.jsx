@@ -180,10 +180,11 @@ class AmazonLogin extends Component {
   }
 
   sendUserLogin() {
-    this.makeApiRequest(config.UserInfoAPI, 'POST', '/login-user/', {
+    this.makeApiRequest(config.RetailStreamAPI, 'POST', '/event-writer/', {
       schema: 'com.nordstrom/user-info/login/1-0-0',
       id: this.state.profile.id,
       name: this.state.profile.name,
+      origin: `hello-retail/web-client-login-user/${this.state.profile.email}/${this.state.profile.name}`,
     })
   }
 

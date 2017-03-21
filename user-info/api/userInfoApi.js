@@ -7,7 +7,7 @@ const aws = require('aws-sdk') // eslint-disable-line import/no-unresolved, impo
 const userLoginSchema = require('./schemas/user-login-schema.json')
 const updatePhoneSchema = require('./schemas/user-update-phone-schema.json')
 const addRoleSchema = require('./schemas/user-add-role-schema.json')
-const userInfoSchema = require('./schemas/user-info-schema.json')
+// const userInfoSchema = require('./schemas/user-info-schema.json') // TODO this schema is not used; in fact, the json talks about items and should probably be removed
 
 // TODO generalize this?  it is used by but not specific to this module
 const makeSchemaId = schema => `${schema.self.vendor}/${schema.self.name}/${schema.self.version}`
@@ -15,13 +15,13 @@ const makeSchemaId = schema => `${schema.self.vendor}/${schema.self.name}/${sche
 const userLoginSchemaId = makeSchemaId(userLoginSchema)
 const updatePhoneSchemaId = makeSchemaId(updatePhoneSchema)
 const addRoleSchemaId = makeSchemaId(addRoleSchema)
-const userInfoSchemaId = makeSchemaId(userInfoSchema)
+// const userInfoSchemaId = makeSchemaId(userInfoSchema)
 
 const ajv = new AJV()
 ajv.addSchema(userLoginSchema, userLoginSchemaId)
 ajv.addSchema(updatePhoneSchema, updatePhoneSchemaId)
 ajv.addSchema(addRoleSchema, addRoleSchemaId)
-ajv.addSchema(userInfoSchema, userInfoSchemaId)
+// ajv.addSchema(userInfoSchema, userInfoSchemaId)
 
 const constants = {
   INVALID_REQUEST: 'Invalid Request',

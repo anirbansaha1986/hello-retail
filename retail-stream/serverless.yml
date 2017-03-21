@@ -7,14 +7,15 @@ custom:
   private: ${file(../private.yml)}
   helloRetail: ${file(../helloRetail.yml)}
   # Retail Stream Versions & Exports
-  # WARNING: each project that uses these will have to define the following two attributes in its serverless.yml: (custom.retailStreamVersion, custom.retailStream)
+  # WARNING: each project that uses these will have to define the following two attributes (custom.retailStreamVersion, custom.retailStream) in its serverless.yml:
   retailStreamVersion: 1 # The version of this service to depend upon
-  retailStream: ${self:} # externally, use `${file(~/retail-stream/serverless.yml)}`, replacing the `~` therein with the appropriate relative reference [e.g. '..' or '../..']  userInfoApiVersion: 1
+  retailStream: ${self:} # externally, use `${file(~/retail-stream/serverless.yml)}`, replacing the `~` therein with the appropriate relative reference [e.g. '..' or '../..']
   # Exports
   exportRetailStreamName: ${self:custom.retailStream.service}:${self:custom.stage}:RetailStreamName:${self:custom.retailStreamVersion}
   exportRetailStreamArn: ${self:custom.retailStream.service}:${self:custom.stage}:RetailStreamArn:${self:custom.retailStreamVersion}
   exportRetailStreamWriterArn: ${self:custom.retailStream.service}:${self:custom.stage}:RetailStreamWriterArn:${self:custom.retailStreamVersion}
   exportRetailStreamReaderArn: ${self:custom.retailStream.service}:${self:custom.stage}:RetailStreamReaderArn:${self:custom.retailStreamVersion}
+  exportRetailStreamRestAPI: ${self:custom.retailStream.service}:${self:custom.stage}:RetailStreamRestAPI:${self:custom.retailStreamVersion}
 
 provider:
   name: aws
@@ -25,26 +26,59 @@ provider:
   environment:
     STAGE: ${self:custom.stage}
 
+functions:
+  eventWriter:
+    role:
+      Fn::GetAtt: [ RetailStreamLambdaWriter, Arn ]
+    handler: retailStreamApi.eventWriter
+    environment:
+      STREAM_NAME:
+        Fn::ImportValue: ${self:custom.retailStream.custom.exportRetailStreamName}
+    events:
+      - http:
+          path: event-writer
+          method: post
+          cors:
+            origins:
+              - '*'
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredentials: false
+
 resources:
   Resources:
+    # Log Group
+    RetailStreamLogGroup:
+      Type: AWS::Logs::LogGroup
+      Properties:
+        LogGroupName: /aws/lambda/${self:service}-${self:custom.stage}-retailStream
+        RetentionInDays: 7
     # Retail Stream
     RetailStream:
       Type: 'AWS::Kinesis::Stream'
       Properties:
         Name: ${self:custom.stage}RetailStream
         ShardCount: 10
-    RetailStreamWriter: # role for producers
+
+    # Role for direct producers
+    RetailStreamWriter:
       Type: AWS::IAM::Role
       Properties:
         Path: /
-        RoleName: ${self:custom.stage}RetailStreamWriter${self:custom.retailStreamVersion}
+        RoleName: ${self:custom.stage}RetailStreamWriter
         AssumeRolePolicyDocument:
           Version: '2012-10-17'
           Statement:
             - Effect: Allow
               Principal:
                 AWS: # role ARNs that are allowed to write to the Retail stream
-                  - arn:aws:iam::${self:custom.private.accountId}:role/${self:custom.private.teamRole}
+                  - 'arn:aws:iam::${self:custom.private.accountId}:role/${self:custom.private.teamRole}'
+                  - '${self:custom.private.productImageProvider}'
               Action: sts:AssumeRole
         ManagedPolicyArns:
           - ${self:custom.private.teamPolicy}
@@ -60,11 +94,12 @@ resources:
                      - 'kinesis:PutRecords'
                    Resource:
                      Fn::GetAtt: [ RetailStream, Arn ]
-    RetailStreamReader: # role for consumers
+    # Role for direct consumers
+    RetailStreamReader:
       Type: AWS::IAM::Role
       Properties:
         Path: /
-        RoleName: ${self:custom.stage}RetailStreamReader${self:custom.retailStreamVersion}
+        RoleName: ${self:custom.stage}RetailStreamReader
         AssumeRolePolicyDocument:
           Version: '2012-10-17'
           Statement:
@@ -88,6 +123,80 @@ resources:
                      - 'kinesis:ListStreams'
                    Resource:
                      Fn::GetAtt: [ RetailStream, Arn ]
+
+    # Role for consumers of the Retail Stream Producer API
+#    RetailStreamClient:
+#      Type: AWS::IAM::Role
+#      Properties:
+#        Path: /
+#        RoleName: ${self:custom.stage}RetailStreamClient
+#        AssumeRolePolicyDocument:
+#          Version: '2012-10-17'
+#          Statement:
+#            - Effect: Allow
+#              Action: sts:AssumeRole
+#              Principal:
+#                AWS: # role ARNs that are allowed to call the Retail Stream Producer API
+#                  - 'arn:aws:iam::${self:custom.private.accountId}:role/${self:custom.private.teamRole}'
+#                  - 'arn:aws:iam::${self:custom.private.accountId}:role/${self:custom.stage}HelloRetailWebIdentity'
+#        ManagedPolicyArns:
+#          - ${self:custom.private.teamPolicy}
+#        Policies:
+#          - PolicyName: ReadFromApi
+#            PolicyDocument:
+#              Version: '2012-10-17'
+#              Statement:
+#                - Effect: 'Allow'
+#                  Action:
+#                    - 'execute-api:Invoke'
+#                  Resource:
+#                    Fn::Join:
+#                      - ''
+#                      - - 'arn:aws:execute-api:${self:provider.region}:${self:custom.private.accountId}:'
+#                        - Ref: ApiGatewayRestApi
+#                        - '/${self:custom.stage}/*/*'
+    RetailStreamLambdaWriter: # role for the Retail Stream Lambda to write to logs and the Retail Stream
+      Type: AWS::IAM::Role
+      Properties:
+        Path: /
+        RoleName: ${self:custom.stage}RetailStreamLambdaWriter
+        AssumeRolePolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action: sts:AssumeRole
+              Principal:
+                AWS: # role ARNs that are allowed to write to logs and retail stream
+                  - 'arn:aws:iam::${self:custom.private.accountId}:role/${self:custom.private.teamRole}'
+            - Effect: Allow
+              Action: sts:AssumeRole
+              Principal:
+                Service: 'lambda.amazonaws.com'
+        ManagedPolicyArns:
+          - ${self:custom.private.teamPolicy}
+        Policies:
+          - PolicyName: CreateAndWriteToLogs
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: 'Allow'
+                  Action:
+                    - 'logs:CreateLogStream'
+                    - 'logs:PutLogEvents'
+                  Resource:
+                    - Fn::Join:
+                      - ':'
+                      - - Fn::GetAtt: [ RetailStreamLogGroup, Arn ]
+                        - '*'
+          - PolicyName: WriteToKinesis
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: 'Allow'
+                  Action:
+                    - 'kinesis:PutRecord'
+                  Resource:
+                    Fn::ImportValue: ${self:custom.retailStream.custom.exportRetailStreamArn}
 
   Outputs:
     RetailStreamName:
@@ -114,3 +223,15 @@ resources:
         Fn::GetAtt: [ RetailStreamReader, Arn ]
       Export:
         Name: ${self:custom.retailStream.custom.exportRetailStreamReaderArn}
+#    RetailStreamClientArn:
+#      Description: Arn for role used by clients of the Retail Stream Producer API
+#      Value:
+#        Fn::GetAtt: [ RetailStreamClient, Arn ]
+#      Export:
+#        Name: ${self:custom.retailStream.custom.exportRetailStreamClientArn}
+    RetailStreamRestAPI:
+      Description: API used to submit producer events to the Retail Stream
+      Value:
+        Ref: ApiGatewayRestApi
+      Export:
+        Name: ${self:custom.retailStream.custom.exportRetailStreamRestAPI}
