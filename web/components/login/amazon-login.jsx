@@ -36,6 +36,7 @@ class AmazonLogin extends Component {
     this.loginClicked = this.loginClicked.bind(this)
     this.retrieveProfile = this.retrieveProfile.bind(this)
     this.sendUserLogin = this.sendUserLogin.bind(this)
+    this.performLoginAndAssumeIdentity = this.performLoginAndAssumeIdentity.bind(this)
 
     this.state = {
       amazonLoginReady: false,
@@ -48,6 +49,8 @@ class AmazonLogin extends Component {
       that.setState({
         amazonLoginReady: true,
       })
+
+      this.performLoginAndAssumeIdentity('never')
     }
 
     loadjs('https://api-cdn.amazon.com/sdk/login1.js')
@@ -81,11 +84,15 @@ class AmazonLogin extends Component {
     })
   }
 
-  authAmazonLogin() {
+  authAmazonLogin(interactive) {
     const that = this
+
+    this.authOptions.ineractive = interactive
 
     return new Promise((resolve, reject) => {
       window.amazon.Login.setClientId(that.loginConfig.clientId)
+      console.log(window.location.href)
+      console.log(that.authOptions)
       window.amazon.Login.authorize(that.authOptions, (response) => {
         if (response.error) { reject(response.error) }
         console.log(response)
@@ -115,11 +122,11 @@ class AmazonLogin extends Component {
     })
   }
 
-  loginClicked() {
+  performLoginAndAssumeIdentity(interactive) {
     const that = this
     this.sts = new AWS.STS()
 
-    this.authAmazonLogin()
+    this.authAmazonLogin(interactive)
       .then((loginResponse) => {
         that.accessToken = loginResponse.access_token
         return that.assumeWebAppIdentityWithToken(loginResponse.access_token)
@@ -154,6 +161,10 @@ class AmazonLogin extends Component {
       .then(() => {
         that.props.awsLoginComplete(that)
       })
+  }
+
+  loginClicked() {
+    this.performLoginAndAssumeIdentity('auto')
   }
 
   retrieveProfile() {
