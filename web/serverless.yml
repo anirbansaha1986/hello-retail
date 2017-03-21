@@ -24,7 +24,7 @@ custom:
       - DomainName
 
   # Hosted Zone ID for all of CloudFormation.
-  cloudFrontHostedZoneId: ${self:custom.private.cloudFrontHostedZoneId}
+  cloudFrontHostedZoneId: ${self:custom.private.hostedZoneId}
 
   # Public domain for the site e.g. hello-retail.biz
   domainName: ${self:custom.private.domainName}
@@ -82,8 +82,6 @@ custom:
     configValues:
       WebAppName: Hello Retail
       Stage: ${self:custom.stage}
-      CatalogReaderRole:
-        Fn::ImportValue: ${self:custom.productCatalogBuilder.custom.exportProductCatalogReaderArn}
       AuthClientId: ${self:custom.oAuthClientId}
       AWSRegion: ${self:custom.private.region}
       SessionName: ${self:custom.helloRetail.name}-website-${self:custom.stage}

@@ -33,7 +33,6 @@ functions:
     handler: retailStreamApi.eventWriter
     environment:
       STREAM_NAME: ${self:custom.stage}RetailStream
-#        Fn::ImportValue: ${self:custom.retailStream.custom.exportRetailStreamName}
     events:
       - http:
           path: event-writer
@@ -164,7 +163,6 @@ resources:
                   Action:
                     - 'kinesis:PutRecord'
                   Resource:
-#                    Fn::ImportValue: ${self:custom.retailStream.custom.exportRetailStreamArn}
                     Fn::GetAtt: [ RetailStream, Arn ]
 
   Outputs:

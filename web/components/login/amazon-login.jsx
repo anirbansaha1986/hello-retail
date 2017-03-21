@@ -15,7 +15,6 @@ class AmazonLogin extends Component {
 
     this.loginConfig = {
       // TODO: Sign requests like: https://github.com/Nordstrom/artillery-plugin-aws-sigv4/blob/master/lib/aws-sigv4.js
-      catalogReaderRole: config.CatalogReaderRole,
       clientId: config.AuthClientId,
       awsRegion: config.AWSRegion,
       sessionName: config.SessionName,
@@ -31,7 +30,6 @@ class AmazonLogin extends Component {
 
     this.assumeWebAppIdentityWithToken = this.assumeWebAppIdentityWithToken.bind(this)
     this.authAmazonLogin = this.authAmazonLogin.bind(this)
-    this.assumeProductCatalogReaderRole = this.assumeProductCatalogReaderRole.bind(this)
     this.componentWillMount = this.componentWillMount.bind(this)
     this.loginClicked = this.loginClicked.bind(this)
     this.retrieveProfile = this.retrieveProfile.bind(this)
@@ -206,11 +204,6 @@ class AmazonLogin extends Component {
       postRequest.write(body)
       postRequest.end()
     })
-  }
-
-  assumeProductCatalogReaderRole() {
-    // TODO a cleaner way to change this.  but, since this needs to be switched to reading from ApiGateway API, do the cheap thing
-    Promise.resolve(this.webApplicationIdentityCredentials)
   }
 
   render() {
