@@ -31,19 +31,13 @@ class ProductDataSource extends Component {
   componentDidMount() {
     this.dynamo = new this.props.awsLogin.aws.DynamoDB()
 
-    this.props.awsLogin.getCredentialsForRole(config.CatalogReaderRole)
-      .then((creds) => {
-        this.dynamo.config.credentials = creds
-      })
-      .then(() => {
-        if (this.props.category) {
-          this.getProductsByCategoryAsync(this.props.category)
-            .then(this.props.productsLoaded)
-        } else if (this.props.productId) {
-          this.getProductsByIdAsync(this.props.productId)
-            .then(this.props.productsLoaded)
-        }
-      })
+    if (this.props.category) {
+      this.getProductsByCategoryAsync(this.props.category)
+        .then(this.props.productsLoaded)
+    } else if (this.props.productId) {
+      this.getProductsByIdAsync(this.props.productId)
+        .then(this.props.productsLoaded)
+    }
   }
 
   getProductByIdFromDynamoAsync(id) {

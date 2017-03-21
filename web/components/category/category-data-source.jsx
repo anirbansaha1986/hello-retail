@@ -24,13 +24,9 @@ class CategoryDataSource extends Component {
   }
 
   componentDidMount() {
-    const that = this
-
     this.dynamo = new this.props.awsLogin.aws.DynamoDB()
 
-    this.props.awsLogin.getCredentialsForRole(config.CatalogReaderRole)
-      .then(creds => (that.dynamo.config.credentials = creds))
-      .then(() => that.getCategoriesAsync())
+    this.getCategoriesAsync()
       .then(this.props.categoriesLoaded)
   }
 

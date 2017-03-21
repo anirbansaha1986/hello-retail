@@ -24,7 +24,7 @@ custom:
       - DomainName
 
   # Hosted Zone ID for all of CloudFormation.
-  cloudFrontHostedZoneId: ${self:custom.private.cloudFrontHostedZoneId}
+  cloudFrontHostedZoneId: ${self:custom.private.hostedZoneId}
 
   # Public domain for the site e.g. hello-retail.biz
   domainName: ${self:custom.private.domainName}
@@ -82,8 +82,6 @@ custom:
     configValues:
       WebAppName: Hello Retail
       Stage: ${self:custom.stage}
-      CatalogReaderRole:
-        Fn::ImportValue: ${self:custom.productCatalogBuilder.custom.exportProductCatalogReaderArn}
       AuthClientId: ${self:custom.oAuthClientId}
       AWSRegion: ${self:custom.private.region}
       SessionName: ${self:custom.helloRetail.name}-website-${self:custom.stage}
@@ -137,6 +135,27 @@ resources:
                   www.amazon.com:app_id: ${self:custom.oAuthAppId}
         ManagedPolicyArns:
           - ${self:custom.private.teamPolicy}
+        Policies:
+          - PolicyName: ReadFromProductCatalog
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                -  Effect: Allow
+                   Action:
+                     - 'dynamodb:Scan'
+                   Resource:
+                    Fn::ImportValue: ${self:custom.productCatalogBuilder.custom.exportProductCategoryTableArn}
+                -  Effect: Allow
+                   Action:
+                     - 'dynamodb:GetItem'
+                     - 'dynamodb:BatchGetItem'
+                   Resource:
+                    Fn::ImportValue: ${self:custom.productCatalogBuilder.custom.exportProductCatalogTableArn}
+                -  Effect: Allow
+                   Action:
+                     - 'dynamodb:Query'
+                   Resource:
+                    Fn::ImportValue: ${self:custom.productCatalogBuilder.custom.exportProductCatalogTableCategoryIndexArn}
 
     # ===================== S3 =====================
 
