@@ -24,7 +24,7 @@ ajv.addSchema(productCreateSchema, productCreateSchemaId)
 ajv.addSchema(userLoginSchema, userLoginSchemaId)
 ajv.addSchema(updatePhoneSchema, updatePhoneSchemaId)
 ajv.addSchema(addRoleSchema, addRoleSchemaId)
-const schema = [
+const schemas = [
   {
     methodName: 'product-purchase',
     schemaId: productPurchaseSchemaId, // NB after addSchema can refer to schema by schemaId
@@ -64,7 +64,7 @@ const impl = {
   }),
 
   clientError: (errors, event) => impl.response(400,
-    `${constants.API_NAME} ${constants.INVALID_REQUEST} could not validate request to any known event schema. Errors by scheme: '${JSON.stringify(errors)}'.  Found in event: '${JSON.stringify(event)}'`),
+    `${constants.API_NAME} ${constants.INVALID_REQUEST} could not validate request to any known event schema. Errors by schema: '${JSON.stringify(errors)}'.  Found in event: '${JSON.stringify(event)}'`),
 
   kinesisError: (methodNames, err) => {
     console.log(err)
@@ -73,21 +73,21 @@ const impl = {
 
   success: items => impl.response(200, JSON.stringify(items)),
 
-  checkKnownSchema: (eventData) => {
+  checkKnownSchemas: (eventData) => {
     const results = {
       errors: [],
       matches: [], // TODO does ajv actually check the content of the schema field vs the eventData schema field or just that it is of the format url?  if latter, then could have multiple matches.
     }
 
-    schema.forEach((scheme) => {
-      if (!ajv.validate(scheme.schemaId, eventData)) { // bad request
+    schemas.forEach((schema) => {
+      if (!ajv.validate(schema.schemaId, eventData)) { // bad request
         results.errors.push({
-          methodName: scheme.methodName,
-          schemaId: scheme.schemaId,
+          methodName: schema.methodName,
+          schemaId: schema.schemaId,
           message: ajv.errorsText(),
         })
       } else {
-        results.matches.push(scheme.methodName)
+        results.matches.push(schema.methodName)
       }
     })
 
@@ -102,7 +102,7 @@ const impl = {
     console.log(origin)
     delete eventData.origin
 
-    const validation = impl.checkKnownSchema(eventData)
+    const validation = impl.checkKnownSchemas(eventData)
 
     if (validation.matches.length === 0) { // bad request with no matching schema
       console.log(validation.errors)
@@ -120,7 +120,7 @@ const impl = {
         StreamName: process.env.STREAM_NAME,
       }
 
-      // TODO what if it matches more than one scheme?  I guess the stream doesn't care, as long as it's valid for something, it's worth putting on.  Consumers can handle it themselves.
+      // TODO what if it matches more than one schema?  I guess the stream doesn't care, as long as it's valid for something, it's worth putting on.  Consumers can handle it themselves.
       kinesis.putRecord(newEvent, (err, data) => {
         if (err) {
           callback(null, impl.kinesisError(validation.matches, err))

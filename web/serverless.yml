@@ -23,9 +23,6 @@ custom:
       - HelloRetailWebDistribution
       - DomainName
 
-  # Hosted Zone ID for all of CloudFormation.
-  cloudFrontHostedZoneId: ${self:custom.private.hostedZoneId}
-
   # Public domain for the site e.g. hello-retail.biz
   domainName: ${self:custom.private.domainName}
 
@@ -92,7 +89,7 @@ custom:
       ProductCategoryTableName:
         Fn::ImportValue: ${self:custom.productCatalogBuilder.custom.exportProductCategoryTableName}
       RetailStreamAPI:
-        Fn::ImportValue: ${self:custom.retailStream.custom.exportRetailStreamRestAPI}
+        Fn::ImportValue: ${self:custom.retailStream.custom.exportRetailStreamRestApi}
     webpackPath: ./webpack.config.js
 
   webApp: ${self:} # externally, use `${file(~/web/serverless.yml)}`, replacing the `~` therein with the appropriate relative reference [e.g. '..' or '../..']
@@ -238,12 +235,12 @@ resources:
           Type: A
           AliasTarget:
             DNSName: ${self:custom.cloudFrontDomainName}
-            HostedZoneId: ${self:custom.cloudFrontHostedZoneId}
+            HostedZoneId: ${self:custom.hostedZoneId}
         - Name: ${self:custom.dnsHostName}
           Type: AAAA
           AliasTarget:
             DNSName: ${self:custom.cloudFrontDomainName}
-            HostedZoneId: ${self:custom.cloudFrontHostedZoneId}
+            HostedZoneId: ${self:custom.hostedZoneId}
       DependsOn:
         - HelloRetailWebDistribution
 
