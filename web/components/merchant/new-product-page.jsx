@@ -64,6 +64,10 @@ class NewProductPage extends Component {
   resetProduct() {
     this.setState({
       submittedProduct: true,
+      category: '',
+      name: '',
+      brand: '',
+      description: '',
     })
   }
 
@@ -95,7 +99,7 @@ class NewProductPage extends Component {
   }
 
   ackCreateProduct() {
-    this.setState(this.emptyProduct)
+    this.resetProduct()
     this.setState({
       submittedProduct: false,
     })
