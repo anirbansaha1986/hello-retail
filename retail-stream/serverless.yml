@@ -55,7 +55,7 @@ resources:
     RetailStreamLogGroup:
       Type: AWS::Logs::LogGroup
       Properties:
-        LogGroupName: /aws/lambda/${self:service}-${self:custom.stage}-retailStream
+        LogGroupName: /aws/lambda/${self:service}-${self:custom.stage}-eventWriter
         RetentionInDays: 7
     # Retail Stream
     RetailStream:
