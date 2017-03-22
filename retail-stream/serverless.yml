@@ -15,7 +15,7 @@ custom:
   exportRetailStreamArn: ${self:custom.retailStream.service}:${self:custom.stage}:RetailStreamArn:${self:custom.retailStreamVersion}
   exportRetailStreamWriterArn: ${self:custom.retailStream.service}:${self:custom.stage}:RetailStreamWriterArn:${self:custom.retailStreamVersion}
   exportRetailStreamReaderArn: ${self:custom.retailStream.service}:${self:custom.stage}:RetailStreamReaderArn:${self:custom.retailStreamVersion}
-  exportRetailStreamRestAPI: ${self:custom.retailStream.service}:${self:custom.stage}:RetailStreamRestAPI:${self:custom.retailStreamVersion}
+  exportRetailStreamRestApi: ${self:custom.retailStream.service}:${self:custom.stage}:RetailStreamRestApi:${self:custom.retailStreamVersion}
 
 provider:
   name: aws
@@ -190,9 +190,9 @@ resources:
         Fn::GetAtt: [ RetailStreamReader, Arn ]
       Export:
         Name: ${self:custom.retailStream.custom.exportRetailStreamReaderArn}
-    RetailStreamRestAPI:
+    RetailStreamRestApi:
       Description: API used to submit producer events to the Retail Stream
       Value:
         Ref: ApiGatewayRestApi
       Export:
-        Name: ${self:custom.retailStream.custom.exportRetailStreamRestAPI}
+        Name: ${self:custom.retailStream.custom.exportRetailStreamRestApi}
