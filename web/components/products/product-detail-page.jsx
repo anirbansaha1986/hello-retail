@@ -40,7 +40,7 @@ class ProductDetailPage extends Component {
       brand: p.brand,
       description: p.description,
       id: p.id,
-      image: `https://${p.image}`,
+      image: p.image ? `https://${p.image}` : null,
     })
   }
 
