@@ -45,7 +45,7 @@ class ProductDetailPage extends Component {
   }
 
   purchaseProduct() {
-    this.props.awsLogin.makeApiRequest(config.RetailStreamAPI, 'POST', '/event-writer/', {
+    this.props.awsLogin.makeApiRequest(config.EventWriterApi, 'POST', '/event-writer/', {
       schema: 'com.nordstrom/product/purchase/1-0-0',
       id: this.props.params.id,
       origin: `hello-retail/web-client-purchase-product/${this.props.awsLogin.state.profile.email}/${this.props.awsLogin.state.profile.name}`,

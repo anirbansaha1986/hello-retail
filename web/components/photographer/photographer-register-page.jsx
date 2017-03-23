@@ -43,7 +43,7 @@ class PhotographerRegisterPage extends Component {
     })
 
     // Call user-info api with update-phone event
-    this.props.awsLogin.makeApiRequest(config.RetailStreamAPI, 'POST', '/event-writer/', {
+    this.props.awsLogin.makeApiRequest(config.EventWriterApi, 'POST', '/event-writer/', {
       schema: 'com.nordstrom/user-info/update-phone/1-0-0',
       id: this.props.awsLogin.state.profile.id,
       phone: phoneNumber,

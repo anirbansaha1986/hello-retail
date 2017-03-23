@@ -24,31 +24,9 @@ ajv.addSchema(productCreateSchema, productCreateSchemaId)
 ajv.addSchema(userLoginSchema, userLoginSchemaId)
 ajv.addSchema(updatePhoneSchema, updatePhoneSchemaId)
 ajv.addSchema(addRoleSchema, addRoleSchemaId)
-const schemas = [
-  {
-    methodName: 'product-purchase',
-    schemaId: productPurchaseSchemaId, // NB after addSchema can refer to schema by schemaId
-  },
-  {
-    methodName: 'product-create',
-    schemaId: productCreateSchemaId,
-  },
-  {
-    methodName: 'user-login',
-    schemaId: userLoginSchemaId,
-  },
-  {
-    methodName: 'user-update-phone',
-    schemaId: updatePhoneSchemaId,
-  },
-  {
-    methodName: 'user-add-role',
-    schemaId: addRoleSchemaId,
-  },
-]
 
 const constants = {
-  INVALID_REQUEST: 'Invalid Request',
+  INVALID_REQUEST: 'Invalid Request: could not validate request to the schema provided.',
   INTEGRATION_ERROR: 'Kinesis Integration Error',
   API_NAME: 'Retail Stream Event Writer',
 }
@@ -63,36 +41,15 @@ const impl = {
     body,
   }),
 
-  clientError: (errors, event) => impl.response(400,
-    `${constants.API_NAME} ${constants.INVALID_REQUEST} could not validate request to any known event schema. Errors by schema: '${JSON.stringify(errors)}'.  Found in event: '${JSON.stringify(event)}'`),
+  clientError: (error, event) => impl.response(400,
+    `${constants.API_NAME} ${constants.INVALID_REQUEST}  ${error}.  Event: '${JSON.stringify(event)}'`),
 
-  kinesisError: (methodNames, err) => {
+  kinesisError: (schemaName, err) => {
     console.log(err)
-    return impl.response(500, `${constants.API_NAME} - ${constants.INTEGRATION_ERROR} trying to write an event for '${JSON.stringify(methodNames)}'`)
+    return impl.response(500, `${constants.API_NAME} - ${constants.INTEGRATION_ERROR} trying to write an event for '${JSON.stringify(schemaName)}'`)
   },
 
   success: items => impl.response(200, JSON.stringify(items)),
-
-  checkKnownSchemas: (eventData) => {
-    const results = {
-      errors: [],
-      matches: [], // TODO does ajv actually check the content of the schema field vs the eventData schema field or just that it is of the format url?  if latter, then could have multiple matches.
-    }
-
-    schemas.forEach((schema) => {
-      if (!ajv.validate(schema.schemaId, eventData)) { // bad request
-        results.errors.push({
-          methodName: schema.methodName,
-          schemaId: schema.schemaId,
-          message: ajv.errorsText(),
-        })
-      } else {
-        results.matches.push(schema.methodName)
-      }
-    })
-
-    return results
-  },
 
   validateAndWriteKinesisEventFromApiEndpoint(event, callback) {
     console.log(JSON.stringify(event))
@@ -102,32 +59,35 @@ const impl = {
     console.log(origin)
     delete eventData.origin
 
-    const validation = impl.checkKnownSchemas(eventData)
-
-    if (validation.matches.length === 0) { // bad request with no matching schema
-      console.log(validation.errors)
-      callback(null, impl.clientError(validation.errors, event))
+    if (!eventData.schema || typeof eventData.schema !== 'string') {
+      callback(null, impl.clientError('Schema name is missing or not a string in received event.', event))
     } else {
-      const kinesis = new aws.Kinesis()
-      const newEvent = {
-        Data: JSON.stringify({
-          schema: 'com.nordstrom/retail-stream-ingress/1-0-0',
-          timeOrigin: new Date().toISOString(),
-          data: eventData,
-          origin,
-        }),
-        PartitionKey: eventData.id, // TODO if some schema use id field something other than the partition key, the schema need to have a keyName field and here code should be eventData[eventData.keyName]
-        StreamName: process.env.STREAM_NAME,
-      }
-
-      // TODO what if it matches more than one schema?  I guess the stream doesn't care, as long as it's valid for something, it's worth putting on.  Consumers can handle it themselves.
-      kinesis.putRecord(newEvent, (err, data) => {
-        if (err) {
-          callback(null, impl.kinesisError(validation.matches, err))
-        } else if (data) {
-          callback(null, impl.success(`${validation.matches}: ${JSON.stringify(data)}`))
+      const schema = ajv.getSchema(eventData.schema)
+      if (!schema) {
+        callback(null, impl.clientError(`Schema name ${eventData.schema} is not registered.`, event))
+      } else if (!ajv.validate(eventData.schema, eventData)) {
+        callback(null, impl.clientError(`Could not validate event to the schema ${eventData.schema}.  Errors: ${ajv.errorsText()}`, event))
+      } else {
+        const kinesis = new aws.Kinesis()
+        const newEvent = {
+          Data: JSON.stringify({
+            schema: 'com.nordstrom/retail-stream-ingress/1-0-0',
+            timeOrigin: new Date().toISOString(),
+            data: eventData,
+            origin, //TODO mask any PII here
+          }),
+          PartitionKey: eventData.id, // TODO if some schema use id field something other than the partition key, the schema need to have a keyName field and here code should be eventData[eventData.keyName]
+          StreamName: process.env.STREAM_NAME,
         }
-      })
+
+        kinesis.putRecord(newEvent, (err, data) => {
+          if (err) {
+            callback(null, impl.kinesisError(eventData.schema, err))
+          } else if (data) {
+            callback(null, impl.success(`Event with schema ${eventData.schema}: ${JSON.stringify(data)}`))
+          }
+        })
+      }
     }
   },
 }

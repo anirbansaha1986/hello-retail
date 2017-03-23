@@ -15,7 +15,6 @@ custom:
   exportRetailStreamArn: ${self:custom.retailStream.service}:${self:custom.stage}:RetailStreamArn:${self:custom.retailStreamVersion}
   exportRetailStreamWriterArn: ${self:custom.retailStream.service}:${self:custom.stage}:RetailStreamWriterArn:${self:custom.retailStreamVersion}
   exportRetailStreamReaderArn: ${self:custom.retailStream.service}:${self:custom.stage}:RetailStreamReaderArn:${self:custom.retailStreamVersion}
-  exportRetailStreamRestApi: ${self:custom.retailStream.service}:${self:custom.stage}:RetailStreamRestApi:${self:custom.retailStreamVersion}
 
 provider:
   name: aws
@@ -26,37 +25,8 @@ provider:
   environment:
     STAGE: ${self:custom.stage}
 
-functions:
-  eventWriter:
-    role:
-      Fn::GetAtt: [ RetailStreamLambdaWriter, Arn ]
-    handler: retailStreamApi.eventWriter
-    environment:
-      STREAM_NAME: ${self:custom.stage}RetailStream
-    events:
-      - http:
-          path: event-writer
-          method: post
-          cors:
-            origins:
-              - '*'
-            headers:
-              - Content-Type
-              - X-Amz-Date
-              - Authorization
-              - X-Api-Key
-              - X-Amz-Security-Token
-              - X-Amz-User-Agent
-            allowCredentials: false
-
 resources:
   Resources:
-    # Log Group
-    RetailStreamLogGroup:
-      Type: AWS::Logs::LogGroup
-      Properties:
-        LogGroupName: /aws/lambda/${self:service}-${self:custom.stage}-eventWriter
-        RetentionInDays: 7
     # Retail Stream
     RetailStream:
       Type: 'AWS::Kinesis::Stream'
@@ -122,49 +92,6 @@ resources:
                    Resource:
                      Fn::GetAtt: [ RetailStream, Arn ]
 
-    RetailStreamLambdaWriter: # role for the Retail Stream Lambda to write to logs and the Retail Stream
-      Type: AWS::IAM::Role
-      Properties:
-        Path: /
-        RoleName: ${self:custom.stage}RetailStreamLambdaWriter${self:custom.retailStreamVersion}
-        AssumeRolePolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-            - Effect: Allow
-              Action: sts:AssumeRole
-              Principal:
-                AWS: # role ARNs that are allowed to write to logs and retail stream
-                  - 'arn:aws:iam::${self:custom.private.accountId}:role/${self:custom.private.teamRole}'
-            - Effect: Allow
-              Action: sts:AssumeRole
-              Principal:
-                Service: 'lambda.amazonaws.com'
-        ManagedPolicyArns:
-          - ${self:custom.private.teamPolicy}
-        Policies:
-          - PolicyName: CreateAndWriteToLogs
-            PolicyDocument:
-              Version: '2012-10-17'
-              Statement:
-                - Effect: 'Allow'
-                  Action:
-                    - 'logs:CreateLogStream'
-                    - 'logs:PutLogEvents'
-                  Resource:
-                    - Fn::Join:
-                      - ':'
-                      - - Fn::GetAtt: [ RetailStreamLogGroup, Arn ]
-                        - '*'
-          - PolicyName: WriteToKinesis
-            PolicyDocument:
-              Version: '2012-10-17'
-              Statement:
-                - Effect: 'Allow'
-                  Action:
-                    - 'kinesis:PutRecord'
-                  Resource:
-                    Fn::GetAtt: [ RetailStream, Arn ]
-
   Outputs:
     RetailStreamName:
       Description: The Name of the Retail Stream
@@ -190,9 +117,3 @@ resources:
         Fn::GetAtt: [ RetailStreamReader, Arn ]
       Export:
         Name: ${self:custom.retailStream.custom.exportRetailStreamReaderArn}
-    RetailStreamRestApi:
-      Description: API used to submit producer events to the Retail Stream
-      Value:
-        Ref: ApiGatewayRestApi
-      Export:
-        Name: ${self:custom.retailStream.custom.exportRetailStreamRestApi}

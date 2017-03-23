@@ -54,9 +54,12 @@ custom:
   private: ${file(../private.yml)}
 
   helloRetail: ${file(../helloRetail.yml)}
-
+  # TODO Suspect some strangeness in referencing of external serverless files by productCatalogBuilder requires these be provided
   retailStreamVersion: 1
   retailStream: ${file(../retail-stream/serverless.yml)}
+
+  eventWriterApiVersion: 1
+  eventWriterApi: ${file(../event-writer/serverless.yml)}
   productCatalogBuilderVersion: 1
   productCatalogBuilder: ${file(../product-catalog/builder/serverless.yml)}
 
@@ -88,8 +91,8 @@ custom:
         Fn::ImportValue: ${self:custom.productCatalogBuilder.custom.exportProductCatalogTableName}
       ProductCategoryTableName:
         Fn::ImportValue: ${self:custom.productCatalogBuilder.custom.exportProductCategoryTableName}
-      RetailStreamAPI:
-        Fn::ImportValue: ${self:custom.retailStream.custom.exportRetailStreamRestApi}
+      EventWriterApi:
+        Fn::ImportValue: ${self:custom.eventWriterApi.custom.exportEventWriterRestApi}
     webpackPath: ./webpack.config.js
 
   webApp: ${self:} # externally, use `${file(~/web/serverless.yml)}`, replacing the `~` therein with the appropriate relative reference [e.g. '..' or '../..']
