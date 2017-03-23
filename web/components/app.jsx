@@ -1,4 +1,5 @@
 import React, { Component } from 'react'
+import { Link } from 'react-router'
 import AmazonLogin from './login/amazon-login'
 import config from '../config'
 
@@ -34,6 +35,7 @@ class App extends Component {
 
     return (
       <div className="app text-center container" >
+        <Link className="homeLink glyphicon glyphicon-home" to={'/'} />
         <h2>{config.WebAppName}</h2>
         { this.state.loggedIn ? (<em>Welcome {app.state.awsLogin.state.profile.name}</em>) : null }
         <div className="content">
